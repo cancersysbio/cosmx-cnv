@@ -1,6 +1,6 @@
 # Local research material (cohort scripts, notebooks, data) - not part of the package
 _research/
-data/
+/data/
 out_cn_boot/
 notebooks/
 logs/
@@ -20,7 +20,6 @@ __pycache__/
 .eggs/
 dist/
 build/
-.pytest_cache/
 
 # Jupyter
 .ipynb_checkpoints/

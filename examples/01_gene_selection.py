@@ -2,10 +2,12 @@
 Step 1 - select genes whose expression tracks copy number.
 
 Uses paired bulk CN (sWGS segments) and CosMX expression across patients:
-for every gene, fit mu(x) = log(1 + b + alpha * 2^(gamma * x)) with patient
-bootstrap and keep genes with a consistent, well-fitting CN effect.
+for every gene, fit pseudobulk expression as a log-linear (Poisson) function of
+log2 CN and keep genes whose slope is clearly positive and whose fit explains
+enough variance (R^2 > 0.2, the threshold used for the shipped breast-cancer list,
+cc.load_breast_cancer_genes()).
 
-Runs on simulated data in ~15 s:  python examples/01_gene_selection.py
+Runs on simulated data in a few seconds:  python examples/01_gene_selection.py
 """
 from pathlib import Path
 
@@ -31,29 +33,31 @@ gene_cn = cc.get_gene_cnv_data(gene_coords, segments)
 cn_table = gene_cn.pivot_table(values="SegmentMean", index="gene_symbol", columns="Patient_ID").T
 expr_table = cc.pseudobulk_expression(adata, groupby="patient.id")
 
-# --- Bootstrap CN-expression fits and filter ----------------------------------
-res_df, _ = cc.bootstrap_all_genes(cn_table, expr_table, n_boot=50, fillna_with_zero=False)
-good_genes = cc.filter_genes_by_bootstrap(res_df, gene_coords, support_threshold=0.8, unexplained_threshold=0.8)
+# --- CN-expression fits and filter --------------------------------------------
+res_df = cc.fit_cn_expression_trends(cn_table, expr_table)
+good_genes = cc.filter_genes_by_trend(res_df, gene_coords, r2_threshold=0.2, max_slope=5)
 
 truth = pd.Series(sim["responsive"], index=gene_coords["gene_symbol"])
 selected = truth.index.isin(good_genes["gene_symbol"])
 print(f"Selected {selected.sum()}/{len(truth)} genes; "
       f"precision {truth[selected].mean():.2f}, recall {truth[selected].sum() / truth.sum():.2f}")
 
-res_df.to_csv(out / "bootstrap_results.csv", index=False)
+res_df.to_csv(out / "cn_expression_fits.csv", index=False)
 good_genes.to_csv(out / "good_gene_coords.csv", index=False)
 
-# --- Plot: fit quality vs effect size, coloured by ground truth ---------------
+# --- Plot: variance explained vs slope, coloured by ground truth --------------
 is_resp = res_df["gene"].map(truth)
 fig, ax = plt.subplots(figsize=(4.5, 3.5))
 for flag, label, color in [(True, "CN-responsive", "C0"), (False, "non-responsive", "C1")]:
     d = res_df[is_resp == flag]
-    ax.scatter(d["mean_delta"], d["unexplained_mean"], s=10, alpha=0.7, color=color, label=label)
-ax.axhline(0.8, color="k", lw=0.8, ls="--")
-ax.set_xlabel("CN effect (mean delta)")
-ax.set_ylabel("Unexplained variance")
+    ax.scatter(d["slope"], d["r2"], s=10, alpha=0.7, color=color, label=label)
+ax.axhline(0.2, color="k", lw=0.8, ls="--")
+ax.axvline(0, color="k", lw=0.8)
+ax.set_xlim(-1, 5)  # genes with almost no CN variation give unstable slopes; max_slope drops them
+ax.set_xlabel("Slope (log expression per log2 CN)")
+ax.set_ylabel("Variance explained (R$^2$)")
 ax.spines[["right", "top"]].set_visible(False)
 ax.legend(frameon=False)
 fig.tight_layout()
 fig.savefig(out / "gene_selection.png", dpi=150)
-print(f"Wrote {out}/bootstrap_results.csv, good_gene_coords.csv, gene_selection.png")
+print(f"Wrote {out}/cn_expression_fits.csv, good_gene_coords.csv, gene_selection.png")

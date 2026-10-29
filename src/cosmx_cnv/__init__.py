@@ -8,13 +8,11 @@ from ._model import CNVModel
 from ._data import prepare_data, prepare_chromosome_data, get_nearest_neighbours, get_adjacency_from_knn, align_panel_genes
 
 # Gene selection
-from ._gene_selection import get_gene_cnv_data, filter_genes_by_bootstrap, pseudobulk_expression
+from ._gene_selection import (get_gene_cnv_data, pseudobulk_expression, fit_cn_expression_trends,
+                              filter_genes_by_trend, load_breast_cancer_genes)
 
 # Post-inference results
 from ._results import create_clone_state_table, create_combined_clone_state_table
-
-# Bootstrap
-from .bootstrap import model_cn, fit_cn_bootstrap, bootstrap_all_genes
 
 # Synthetic data
 from .simulate import simulate_dataset
@@ -33,11 +31,10 @@ __all__ = [
     'prepare_data', 'prepare_chromosome_data', 'align_panel_genes',
     'get_nearest_neighbours', 'get_adjacency_from_knn',
     # Gene selection
-    'get_gene_cnv_data', 'filter_genes_by_bootstrap', 'pseudobulk_expression',
+    'get_gene_cnv_data', 'pseudobulk_expression', 'fit_cn_expression_trends',
+    'filter_genes_by_trend', 'load_breast_cancer_genes',
     # Results
     'create_clone_state_table', 'create_combined_clone_state_table',
-    # Bootstrap
-    'model_cn', 'fit_cn_bootstrap', 'bootstrap_all_genes',
     # Synthetic data
     'simulate_dataset',
     # Tools

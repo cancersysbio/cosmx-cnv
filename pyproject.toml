@@ -28,11 +28,8 @@ dependencies = [
     "matplotlib",
 ]
 
-[project.optional-dependencies]
-test = ["pytest"]
-
-[project.scripts]
-cosmx-cnv-bootstrap = "cosmx_cnv._cli:main"
-
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+cosmx_cnv = ["data/*.csv"]

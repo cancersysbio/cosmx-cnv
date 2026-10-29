@@ -75,25 +75,42 @@ conf = np.array([[np.sum((true_k == i) & (pred_k == j)) for j in range(config.nu
                  for i in range(config.num_components)])
 _, match = linear_sum_assignment(-conf)                  # true clone i <-> component match[i]
 
-fig = plt.figure(figsize=(11, 3.6))
+K = config.num_components
+clone_colors = plt.get_cmap("Set2")(np.arange(K))
+fig = plt.figure(figsize=(12, 4.8))
+outer = fig.add_gridspec(1, 2, width_ratios=[1.22, 1.98], wspace=0.18)
+left, right = outer[0].subgridspec(2, 1, hspace=0.25), outer[1].subgridspec(K, 1, hspace=0.15)
 xy = obs.loc[m, ["CenterX_global_px", "CenterY_global_px"]].to_numpy()
 for i, (labels, title) in enumerate([(true_k, "True clones"), (np.argsort(match)[pred_k], "Inferred clones")]):
-    ax = fig.add_subplot(1, 3, i + 1)
-    ax.scatter(xy[:, 0], xy[:, 1], c=labels, cmap="Set2", s=4, vmin=0, vmax=7)
-    ax.set_title(f"{title} ({patients[p]})")
+    ax = fig.add_subplot(left[i])
+    ax.scatter(xy[:, 0], xy[:, 1], c=clone_colors[labels], s=4)
+    ax.set_title(f"{title} ({patients[p]}, 2 cores)", fontsize=10)
     ax.set_aspect("equal")
     ax.axis("off")
 
-ax = fig.add_subplot(1, 3, 3)
+# One track per clone: inferred log2 CN per gene (dots, blue = loss, red = gain), truth in black
 true_cn = sim["true_cn"][patients[p]]
 gene_order = [list(gene_coords["gene_symbol"]).index(g) for g in md["gene_names"]]
-for k in range(1, config.num_components):
-    ax.plot(true_cn[k, gene_order] + 2 * k, color="k", lw=1)
-    ax.plot(s_loc[p, match[k]] / np.log(2) + 2 * k, color=f"C{k}", lw=1, alpha=0.8)
-ax.set_xlabel("Genes (genome order)")
-ax.set_ylabel("log2 CN (offset per clone)")
-ax.set_title("CN profiles: true (black) vs inferred")
-ax.spines[["right", "top"]].set_visible(False)
-fig.tight_layout()
-fig.savefig(out / "cnv_inference.png", dpi=150)
+chrom = gene_coords["chromosome"].to_numpy()[gene_order]
+bounds = np.flatnonzero(chrom[1:] != chrom[:-1]) + 1
+x = np.arange(len(gene_order))
+for k in range(K):
+    ax = fig.add_subplot(right[k], sharex=ax if k else None)
+    inferred = s_loc[p, match[k]] / np.log(2)      # model works in natural log
+    truth = true_cn[k, gene_order]
+    ax.scatter(x, truth, s=1, color="k", zorder=1)
+    ax.scatter(x, inferred, s=3, c=inferred, cmap="RdBu_r", vmin=-1, vmax=1, zorder=2)
+    lim = max(0.6, 1.15 * np.abs(np.r_[truth, inferred]).max())
+    ax.set_ylim(-lim, lim)
+    for b in bounds:
+        ax.axvline(b - 0.5, color="0.85", lw=0.5, zorder=0)
+    ax.set_ylabel(f"clone {k}" + (" (neutral)" if k == 0 else ""), color=clone_colors[k] * 0.75, fontsize=9, fontweight="bold")
+    ax.spines[["right", "top"]].set_visible(False)
+    if k == 0:
+        ax.set_title("log2 CN ratio per gene: true (black) vs inferred")
+    if k < K - 1:
+        ax.tick_params(labelbottom=False)
+ax.set_xticks((np.r_[0, bounds] + np.r_[bounds, len(x)]) / 2, [f"chr{c}" for c in chrom[np.r_[0, bounds]]], fontsize=8)
+ax.tick_params(axis="x", length=0)
+fig.savefig(out / "cnv_inference.png", dpi=150, bbox_inches="tight")
 print(f"Wrote {out}/clone_cn_profiles.csv, cnv_inference.png")
