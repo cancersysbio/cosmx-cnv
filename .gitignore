@@ -1,0 +1,41 @@
+# Local research material (cohort scripts, notebooks, data) - not part of the package
+_research/
+data/
+out_cn_boot/
+notebooks/
+logs/
+outputs/
+examples/data/
+
+# Large data files
+*.h5ad
+*.rds
+*.RData
+*.Rhistory
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+._*
+.DS_Store
+
+# IDE / env
+.vscode/
+.idea/
+.env
+.venv/
+venv/
+.claude/
+
+# SLURM
+slurm-*.out

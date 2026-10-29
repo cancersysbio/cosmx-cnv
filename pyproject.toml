@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cosmx-cnv"
+version = "0.1.0"
+description = "Bayesian inference of clonal copy number variation from CosMX spatial transcriptomics"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Artem Lomakin" }]
+keywords = ["copy number", "spatial transcriptomics", "CosMX", "pyro", "cancer"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "torch",
+    "pyro-ppl",
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "anndata",
+    "tqdm",
+    "requests",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+cosmx-cnv-bootstrap = "cosmx_cnv._cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
